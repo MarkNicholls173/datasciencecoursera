@@ -1,20 +1,19 @@
-complete <- function(directory, id = 1:332){
+corr <- function(directory, threshold = 0){
         ## 'directory' is a character vector of length 1 indicating
         ## the location of the CSV files
         
-        ## 'id' is an integer vector indicating the monitor ID numbers
-        ## to be used
+        ## 'threshold' is a numeric vector of length 1 indicating the
+        ## number of complete observed observations (on all 
+        ## variables) required to compute the correlation between
+        ## nitate and sulfate; the default is 0
         
-        ## Return a data frame of the form
-        ## id nobs
-        ## 1  117
-        ## 2  1041
-        ## ...
-        ## where id is the monitor id number and 'nobs' is the
-        ## number of complete cases
+        ## Return a numeric vector of correlations
+        ## NOTE! do not round the result!
+        
+        id <- 1:332
         
         ## create dataframe for results
-        results <- data.frame()
+        results <- vector("numeric")
         
         # for loop - each item in list
         for(file in id) {
@@ -38,19 +37,21 @@ complete <- function(directory, id = 1:332){
                 # group by id - count cases
                 numRows = nrow(goodData)
                 
-                # make dataframe of id and nobs
-                thisResult <- c(file, numRows)
-        
+                # if numrows < threshold skip
+                if(numRows < threshold){ next }
+                
+                # calculate correlation
+                thisCorr <- cor(goodData$sulfate, goodData$nitrate)
+                
                 # add to resulsts with rbind()
-                results <- rbind(results, c(file, numRows))
+                results <-  c(results, thisCorr)
                 
         }
-        # return the data frame
-        names(results) <- c("id", "nobs")
+        # return the vector
         results
 }
 
-result <- data.frame()
+corrresult <- data.frame()
 
 id = 1
 numRows = 120
@@ -62,7 +63,7 @@ names(result) <- c("id", "nobs")
 
 
 df <- read.csv("./specdata/001.csv")
-good <- df[complete.cases(df), ]
+corgood <- df[complete.cases(df), ]
 
 
 
@@ -72,14 +73,19 @@ good2 <- df2[complete.cases(df2), ]
 
 
 
+id <- 1:5
+directory <- "specdata"
+threshold <- 300
+results <- vector()
 
+id <- 1:5
 
-files <- 1:5
-directory = "specdata"
-#pollutant <- "sulfate"
-results <- data.frame()
+## create dataframe for results
+results <- vector()
 
-for(file in files) {
+# for loop - each item in list
+for(file in id) {
+        # open the files (pad out leading Zeros eg 001.csv)
         if(file < 10) {
                 thisFile <- (paste("00",file,".csv", sep = ""))
         }
@@ -99,14 +105,37 @@ for(file in files) {
         # group by id - count cases
         numRows = nrow(goodData)
         
-        # make dataframe of id and nobs
-        thisResult <- c(file, numRows)
+        # if numrows < threshold skip
+        if(numRows < threshold){ next }
+        
+        # calculate correlation
+        thisCorr <- cor(goodData$sulfate, goodData$nitrate)
         
         # add to resulsts with rbind()
-        results <- rbind(results, c(file, numRows))
+        results <-  c(results, thisCorr)
+        
 }
-
-names(results) <- c("id", "nobs")
+# return the vector
 results
-               
+
+id <- 1:5
+for(file in id) {
+        # open the files (pad out leading Zeros eg 001.csv)
+        if(file < 10) {
+                thisFile <- (paste("00",file,".csv", sep = ""))
+        }
+        else if(file < 100) {
+                thisFile <- (paste("0",file,".csv", sep = ""))
+        }
+        else {
+                thisFile <- (paste(file,".csv", sep = ""))
+        }
+        thisDf <- read.csv(paste(directory,"/",thisFile, sep = ""))
+        goodData <- thisDf[complete.cases(thisDf), ]
+        numRows = nrow(goodData)
+        if(numRows < threshold){ next }
+        print(numRows)
+        thisCorr <- cor(goodData$sulfate, goodData$nitrate)
+        results <-  c(results, thisCorr)
+}
 
