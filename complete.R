@@ -1,17 +1,17 @@
-pollutantmean <- function(directory, pollutant, id = 1:332){
+complete <- function(directory, id = 1:332){
         ## 'directory' is a character vector of length 1 indicating
         ## the location of the CSV files
-        
-        ## 'pollutant' is a character vector of length 1 indicating
-        ## the name of the pollutant for which we will calculate the
-        ## mean; either sulfate or nitrate
         
         ## 'id' is an integer vector indicating the monitor ID numbers
         ## to be used
         
-        ## Return the mean of the pollutant across all the monitors list
-        ## in the 'id' vector (ignoring NA values)
-        ## NOTE: Do not round the result
+        ## Return a data frame of the form
+        ## id nobs
+        ## 1  117
+        ## 2  1041
+        ## ...
+        ## where id is the monitor id number and 'nobs' is the
+        ## number of complete cases
         
         ## create dataframe for results
         results <- data.frame()
@@ -32,39 +32,51 @@ pollutantmean <- function(directory, pollutant, id = 1:332){
                 # get data from file 
                 thisDf <- read.csv(paste(directory,"/",thisFile, sep = ""))
                 
-                # column (filter NAs)
-                goodData <-  thisDf[!is.na(thisDf[pollutant]),][pollutant]
+                # get complete cases
+                goodData <- thisDf[complete.cases(thisDf), ]
                 
+                # group by id - count cases
+                numRows = nrow(goodData)
+                
+                # make dataframe of id and nobs
+                thisResult <- c(file, numRows)
         
                 # add to resulsts with rbind()
-                results <- rbind(results, goodData)
+                results <- rbind(results, c(file, numRows))
                 
         }
-        # return mean with the na flag set
-        mean(results[,1])
+        # return the data frame
+        names(results) <- c("id", "nobs")
+        results
 }
 
+result <- data.frame()
+
+id = 1
+numRows = 120
+
+result <- rbind(result, c(id, numRows))
+
+names(result) <- c("id", "nobs")
+
+
+
 df <- read.csv("./specdata/001.csv")
-bad <- is.na(df$sulfate)
-good <- df[!bad, ]
+good <- df[complete.cases(df), ]
 
-pollutant <- "sulfate"
+
+
 df2 <- read.csv("./specdata/002.csv")
-column <- df2[pollutant]
-
-goodData <-  df2[!is.na(df2[pollutant]),][pollutant]
-
-mean(test$sulfate)
+good2 <- df2[complete.cases(df2), ]
 
 
-paste(dir,"/",0,1,".csv", sep = "")
-test <- read.csv(paste(dir,"/",0,0,1,".csv", sep = ""))
 
-rbind(good, good2)
+
+
 
 files <- 1:5
 directory = "specdata"
-pollutant <- "sulfate"
+#pollutant <- "sulfate"
 results <- data.frame()
 
 for(file in files) {
@@ -77,15 +89,24 @@ for(file in files) {
         else {
                 thisFile <- (paste(file,".csv", sep = ""))
         }
+        
+        # get data from file 
         thisDf <- read.csv(paste(directory,"/",thisFile, sep = ""))
-        ## filter out NA before adding to results
-        goodData <-  thisDf[!is.na(thisDf[pollutant]),][pollutant]
         
+        # get complete cases
+        goodData <- thisDf[complete.cases(thisDf), ]
         
+        # group by id - count cases
+        numRows = nrow(goodData)
         
-        results <- rbind(results, goodData)
+        # make dataframe of id and nobs
+        thisResult <- c(file, numRows)
+        
+        # add to resulsts with rbind()
+        results <- rbind(results, c(file, numRows))
 }
 
-mean(results[,1])
+names(results) <- c("id", "nobs")
+results
                
 
