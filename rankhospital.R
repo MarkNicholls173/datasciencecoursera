@@ -1,9 +1,11 @@
-best <- function(state, outcome){
-        ## state 2 character abbrevation for state
-        ## outcome one of "heart attack", "heart failuer" or "pnuemonia"
+rankhospital <- function(state, outcome, num = "best"){
+        ## state:       character abbrevation for state
+        ## outcome:     one of "heart attack", "heart failuer" or "pnuemonia"
+        ## num:          ranking of hospital in that outcome (best|worse or int rank)
         ##
-        ## return character vector with name of hospital with
-        ## lowest 30 day mortality rate for outcome
+        ## return character vector with name of hospital
+        ##
+        ## if num is larger than the number of hospitals in that state return NA
         ##
         ## columns of interest
         ## [2] Hospital.Name
@@ -15,7 +17,7 @@ best <- function(state, outcome){
         ## validate inputs state is valid and outcome is one of the 3
         ## stop "invalid state|outcome"
         ##
-        ## ties: return first result alphabetically
+        ## ties: return all results alphabetically
         
         ##read outcome data
         allOutcomeData <- read.csv("outcome-of-care-measures.csv", colClasses = "character")
@@ -23,22 +25,9 @@ best <- function(state, outcome){
         ## get distinct list of states
         states = sort(unique(allOutcomeData[,7]))
         
-        ## set flag false
-        #matchFound = FALSE
-        
+
         ## test to see if state is in list of states
-        #for(thisstate in states){
-                #matchFound <- (thisstate == state)
-                #if(matchFound){ break }
-        #}
-        
-        # stop if match not found
-        #if(!matchFound){
-                #stop("invalid state")
-        #}
-        
-        ## test to see if state is in list of states
-        # stop if match not found
+        ## stop if match not found
         if(!any(states == state)){ stop("invalid state") }
         
         
@@ -57,25 +46,41 @@ best <- function(state, outcome){
         myOutcomeData <- allOutcomeData[allOutcomeData[7] == state, c(2, outcomeCol)]
         ##set outcome to numeric
         myOutcomeData[,2] <- as.numeric(myOutcomeData[,2]) 
+        
         ##filter for NA
         myOutcomeData <- myOutcomeData[!is.na(myOutcomeData[2]), ]
-        ##get names where outcome == minimum of outcome
-        myResult <- sort(myOutcomeData[myOutcomeData[2] == min(myOutcomeData[2]), 1])
-        ## sort results by alpha
+        
+        ##user order to sort DF by col 2 then col 1
+        myOutcomeData <- myOutcomeData[order(myOutcomeData[,2], myOutcomeData[, 1]),]
+        
+        #resolve best|worse|int for rank
+        if(!is.numeric(num)){
+                if(num == "best"){
+                        num <-  1
+                } else if(num == "worst") {
+                        num <- nrow(myOutcomeData)
+                } else {
+                        stop("invalid rank passed")
+                }
+                
+        }
         
         ##return result
-        myResult[1]
-        
+        myOutcomeData[num, 1]
         
 }
 
 
-#state <-  "MD"
-state <-  "BB"
+state <-  "TX"
+#state <-  "BB"
 #outcome <- "heart attack"
-#outcome <- "heart failure"
-outcome <- "pnuemonia"
+outcome <- "heart failure"
+#outcome <- "pnuemonia"
 #outcome <- "invalid"
+num = 4
+#num <- "best"
+#num <- "worst"
+#num <- "wrong"
 
 
 ##read outcome data
@@ -101,15 +106,31 @@ if(outcome == "heart attack"){
         stop("invalid outcome")
 }
 
+
 ##subset for state, get name and outcome result
 myOutcomeData <- allOutcomeData[allOutcomeData[7] == state, c(2, outcomeCol)]
 ##set outcome to numeric
 myOutcomeData[,2] <- as.numeric(myOutcomeData[,2]) 
+
 ##filter for NA
 myOutcomeData <- myOutcomeData[!is.na(myOutcomeData[2]), ]
-##get names where outcome == minimum of outcome
-myResult <- sort(myOutcomeData[myOutcomeData[2] == min(myOutcomeData[2]), 1])
-## sort results by alpha
+
+##user order to sort DF by col 2 then col 1
+myOutcomeData <- myOutcomeData[order(myOutcomeData[,2], myOutcomeData[, 1]),]
+
+#resolve best|worse|int for rank
+if(!is.numeric(num)){
+        if(num == "best"){
+                num <-  1
+        } else if(num == "worst") {
+                num <- nrow(myOutcomeData)
+        } else {
+                stop("invalid rank passed")
+        }
+                
+}
 
 ##return result
-myResult
+myOutcomeData[num, 1]
+
+
