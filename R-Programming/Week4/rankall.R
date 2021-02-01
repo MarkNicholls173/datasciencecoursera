@@ -50,6 +50,7 @@ rankall <- function(outcome, num = "best"){
         statetables <- split(myOutcomeData, myOutcomeData[2])
         
         #resolve best|worse|int for rank
+        worstFlag <- FALSE
         if(!is.numeric(num)){
                 if(num == "best"){
                         num <-  1
