@@ -92,7 +92,6 @@ On the Residuals vs Fitted plot for Model 2 the red dotted line is not very hori
 ```{r, echo=FALSE}
 par(mfcol = c(1, 2))
 boxplot(mtcars$mpg ~ mtcars$trans_)
-labels(x = )
 plot(mtcars$mpg ~ mtcars$weight, pch = 19)
 abline(lm(mtcars$mpg ~ mtcars$weight), col = "blue", lwd = 2)
 
