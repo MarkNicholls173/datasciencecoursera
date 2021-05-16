@@ -1,0 +1,118 @@
+---
+title: "Auto-Manual Comparison for Regression Model course projct"
+author: "Mark Nicholls"
+date: "16/05/2021"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#load the data
+data("mtcars")
+```
+
+## Executive Summary
+
+I have been asked to explore the relationship between vehicle transmission and fuel economy (in Miles Per Gallon / MPG), in order to answer these questions:  
+
+- "Is automatic or manual better for MPG"
+- "Quantify the difference between automatic and manual transmissions"
+
+For this analysis I will use the mtcars data, a standard data set included with the R data analysis software. The help file for the data set provides this description of the data:
+
+>*The data was extracted from the 1974 Motor Trend US magazine, and comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973–74 models).*
+
+After some exploratory data analysis I decided to model how mpg changes by transmission and to compare this to a model which also takes into account vehicle weight, as I believed this to be an important factor.
+
+My analysis shows that after accounting for vehicle weight, transmission has very little effect on mpg.
+
+
+### Analysis
+
+Lets look at the first 3 rows of data data to see what variables are available
+
+
+```{r echo=FALSE}
+knitr::kable(head(mtcars, 3), caption = "mtcars dataset")
+```
+
+So we have MPG and transmission included in the data set as `mpg` *MPG Miles per (US) gallon* and `am` *Transmission (0 = automatic, 1 = manual)* respectively. I also believe that vehicle weight might also be in important factor that affects mpg so so we'll look at that one as well: `wt` *Weight (1000 lbs)*.
+
+I plotted a box and whisker plot of mpg by transmission, and also a scatter plot of mpg by weight, with a regression line added, see Appendix: Exploratory Data Analysis plots
+
+A first glance there appeared to be a relationship between transmission and mpg. The box and whisker plot showed automatic has a lower mean and has less variance than manual. The scatter plot showed there is also a clear relationship between weight and mpg, the greater the weight, the lower the mpg, lets model both of these relationships.
+\newpage  
+
+### Modelling  
+
+Model 1 is mpg by transmission, Model 2 is the same as Model 1 but with an added term for vehicle weight. I remove the intercepts from both so the estimates can be interpreted as the mean change in mpg for each term. Here are the estimates from the model.
+
+```{r, echo=FALSE}
+mtcars$trans_ <- factor(mtcars$am, labels = c("Automatic", "Manual"))
+mtcars$weight <- mtcars$wt
+fit1 <- lm(mpg ~ trans_ -1 , data = mtcars)
+fit2 <- lm(mpg ~ trans_ + weight - 1 , data = mtcars)
+
+models <- data.frame(`Model 1` = c(summary(fit1)$coef[,1], NA),
+                     `Model 2` = c(summary(fit2)$coef[,1]),
+                     row.names = c("Automatic", "Manual", "Weight"))
+knitr::kable(models, caption = "Model Estimates", digits = 2)
+```
+
+I can see from this that Model 1 shows higher mpg for manual than automatic, but Model 2 shows that when you account for vehicle weight the mpg for each transmission type is very similar. 
+
+In order to quantify uncertainty we can look at the confidence intervals for the models. In table 3 we can see that high end of the manual interval is quite close to the low end of the automatic interval which means we can be only confident there is a small difference in mpg by transmission type.
+
+
+```{r echo=FALSE}
+knitr::kable(confint(fit1),caption ="Model 1", digits = 2)
+
+```
+
+Table 4 shows the confidence intervals for the second fit. Intervals for both transmission types are very similar, confirming our results from Model 1. And Weight has a much greater factor on vehicle mpg than transmission type, here we can be 95% certain there for each 1000lbs vehicle weight the mpg will reduce by between 6.965 and 3.741 miles per gallon.
+
+```{r echo=FALSE}
+knitr::kable(confint(fit2), caption ="Model 2", digits = 2)
+
+```
+
+After fitting the models I also looked at some residual and diagnostic plots (see Appendix: Residual / diagnostic plots)
+
+The Normal Q-Q plots show that the linear assumption of normal residuals holds true for both models.
+
+On the Residuals vs Fitted plot for Model 2 the red dotted line is not very horizontal. This suggests that the relationship might be non-linear and a curve might fit these data better. Also the Residual vs Leverage for Model 2 shows some outliers, this suggests further investigation might be worthwhile to see if there is more information we could include to produce a more accurate model.
+\newpage 
+
+## Appendix
+
+### Exploratory Data Analysis Plots
+
+```{r, echo=FALSE}
+par(mfcol = c(1, 2))
+boxplot(mtcars$mpg ~ mtcars$trans_)
+labels(x = )
+plot(mtcars$mpg ~ mtcars$weight, pch = 19)
+abline(lm(mtcars$mpg ~ mtcars$weight), col = "blue", lwd = 2)
+
+```
+
+
+### Residual / Diagnostic plots 
+
+#### Model 1
+
+
+```{r, echo=FALSE, fig.height=6}
+par(mfrow = c(2, 2))
+plot(fit1)
+```
+
+#### Model 2
+
+```{r, echo=FALSE, fig.height=6}
+par(mfrow = c(2, 2))
+plot(fit2)
+```
+
