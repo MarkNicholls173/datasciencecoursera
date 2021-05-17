@@ -1,0 +1,99 @@
+---
+title: "Statistcal Inference Course Project Part 2"
+author: "Mark Nicholls"
+date: "24/04/2021"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Basic Inferential Data Analysis
+
+## Overview
+
+Here I will load up the ToothGrowth data, then perform some basic exploratory data analyses.  I'll then show an appropriate plot to summarize the data. I'll then use hypothesis tests to compare tooth growth by supplement and dose, and then state my assumptions and conclusions
+
+## Basic summary of the data
+
+```{r cars}
+#load the data
+data("ToothGrowth")
+#number of rows and columns
+dim(ToothGrowth)
+#first few rows
+head(ToothGrowth)
+#last few rows
+tail(ToothGrowth)
+# how many NAs?
+sum(apply(ToothGrowth, 2, is.na))
+# how many of each
+table(ToothGrowth$supp, ToothGrowth$dose)
+```
+
+## Data Summary
+
+Ok, it looks like we have 60 hamsters split into 2 groups, one for each supplement and each supplement has 3 doses, (0.5, 1 & 2). I'll use a box & whisker plot to summarize the data.
+
+```{r}
+#load library
+library(ggplot2)
+
+ggplot(data = ToothGrowth) +
+        geom_boxplot(aes(x = supp, y = len)) +
+        facet_grid(. ~ dose) +
+        labs(x = "Suppliment", y = "Length")
+        
+```
+
+It appears from the box & whisker plot that for lower doses OJ results in greater average tooth length, and at the greatest dose the average tooth length appears the same, lets test those differences to a significance level of 0.05 (95% confidence)
+
+## Hypothesis tests
+
+For all these tests I'll use H0: no difference in the mean, and Ha: the means are not equal, that is to say that any increase is meaningful. My significance level or alpha i0 0.05, so any p value below that I will consider sufficient evidence to reject H0.
+
+I'll separate the relevant values and then do use a t.test to compare the means, default values all apply here so I'll use those.
+
+First, for dose = 0.5 
+
+```{r}
+vc_05 <- ToothGrowth[ToothGrowth$supp == "VC" & ToothGrowth$dose == 0.5,1]
+oj_05 <- ToothGrowth[ToothGrowth$supp == "OJ" & ToothGrowth$dose == 0.5,1]
+
+t.test(oj_05, vc_05)
+
+```
+The p value is below my chosen significance level, so I reject HO in favour of the alternative; dose 0.5 OJ has a significantly greater tooth length.
+
+Second, do the same analysis for dose = 1
+
+```{r}
+vc_1 <- ToothGrowth[ToothGrowth$supp == "VC" & ToothGrowth$dose == 1,1]
+oj_1 <- ToothGrowth[ToothGrowth$supp == "OJ" & ToothGrowth$dose == 1,1]
+
+t.test(oj_1, vc_1)
+
+```
+Again the p value is far less then my chosen significance level so i reject HO in favour of the alternative: at dose = 1 OJ has a significantly greater tooth length.
+
+Last, for dose = 2
+```{r}
+vc_2 <- ToothGrowth[ToothGrowth$supp == "VC" & ToothGrowth$dose == 2,1]
+oj_2 <- ToothGrowth[ToothGrowth$supp == "OJ" & ToothGrowth$dose == 2,1]
+
+t.test(oj_2, vc_2)
+
+```
+
+Here the p value is above my chosen significance level, so I fail to reject H0:  the means are equal, on  there is no significant difference in average tooth growth between the supplements.
+
+## Conclusion
+
+For this analysis I assume that that the trials were properly randomized and the data has no underlying confounding factors which affected the tooth growth rate.
+
+For dose equal to 2 there was not a significant difference in the mean of the tooth growth rate for the supplements.
+
+However at both doses lower than 2 the OJ supplement resulted in a greater tooth length when tested at a significance level of 0.05 (95%)
