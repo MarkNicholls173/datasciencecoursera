@@ -1,7 +1,8 @@
+## NOT WORKING
+
 #libraries
 library(caret)
 library(ggplot2)
-library(rpart)
 
 #load data & basic info
 data(iris)
@@ -20,7 +21,7 @@ dim(testing)
 qplot(Petal.Width,Sepal.Width,colour=Species,data=training)
 
 #fit/train model
-modFit <- train(Species ~ .,method="rpart",data=training)
+modFit <- train(Species ~ .,method="bag",data=training, metric = "Accuracy")
 print(modFit$finalModel)
 
 #predict data
