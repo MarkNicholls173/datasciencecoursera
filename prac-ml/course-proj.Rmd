@@ -1,0 +1,121 @@
+---
+title: "ML Course Project"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+download the data
+
+```{r}
+train_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+test_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+train_filename <- "pml-training.csv"
+test_filename <- "pml-testing.csv"
+
+curl::curl_download(train_url, train_filename)
+curl::curl_download(test_url, test_filename)
+```
+
+
+load training data
+
+```{r}
+library(tidyverse)
+library(caret)
+training <- read_csv(train_filename)
+
+training %>%
+        select(1:10)
+
+```
+data cleaning / prep
+
+```{r}
+training_clean <- training %>%
+        select(-c(1:7)) %>%
+        mutate(classe = as_factor(classe)) %>%
+        mutate_if(sapply(.,is.character), as.numeric)
+
+
+# TODO 
+# 1 deal with NAs
+
+
+
+na_cols <-  training_clean %>%
+        select(-classe) %>%
+        pivot_longer(everything()) %>%
+        group_by(name) %>%
+        filter(value %>% is.na) %>%
+        summarise(count = n()) %>%
+        pivot_wider(names_from = name, values_from = count)
+        
+
+names(na_cols)
+
+training_clean <- training_clean %>% select(-names(na_cols))
+
+```
+
+
+
+cross validation strategy
+
+```{r}
+
+fitControl <- trainControl()
+
+```
+
+modelling
+
+```{r}
+sample <- sample_n(training_clean, 2000)
+mod_tree <- train(classe ~ ., method = "rf", data = sample)
+mod_tree
+```
+
+
+
+out of sample error
+
+```{r}
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

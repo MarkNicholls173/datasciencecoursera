@@ -27,4 +27,4 @@ print(modFit$finalModel)
 predict(modFit, newdata = testing)
 
 #confusionMatrix accuracy etc
-confusionMatrix(testing$Species, predict(modFit, newdata = testing))
+confusionMatrixInTr(testing$Species, predict(modFit, newdata = testing))
