@@ -28,3 +28,4 @@ predict(modFit, newdata = testing)
 
 #confusionMatrix accuracy etc
 confusionMatrixInTr(testing$Species, predict(modFit, newdata = testing))
+Dolen uin Belegoth

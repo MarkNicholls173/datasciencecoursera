@@ -26,10 +26,11 @@ load training data
 ```{r}
 library(tidyverse)
 library(caret)
+library(doParallel)
+
 training <- read_csv(train_filename)
 
-training %>%
-        select(1:10)
+str(training) 
 
 ```
 data cleaning / prep
@@ -43,8 +44,6 @@ training_clean <- training %>%
 
 # TODO 
 # 1 deal with NAs
-
-
 
 na_cols <-  training_clean %>%
         select(-classe) %>%
@@ -61,24 +60,81 @@ training_clean <- training_clean %>% select(-names(na_cols))
 
 ```
 
+```{r}
+#draw sample for quick fitting and testing preprocessing
+
+sample <- sample_n(training_clean, 8000)
+
+preProcSample = preProcess(sample, 
+                           method = c("center", "scale"))
+
+sample_trans <- predict(preProcSample, sample)
+
+
+```
 
 
 cross validation strategy
 
 ```{r}
 
-fitControl <- trainControl()
+trainControl <- trainControl(method = "repeatedcv",
+                          number = 10,
+                          repeats = 10,
+                          allowParallel = TRUE)
 
 ```
 
-modelling
+random forest modelling
 
 ```{r}
-sample <- sample_n(training_clean, 2000)
-mod_tree <- train(classe ~ ., method = "rf", data = sample)
-mod_tree
-```
 
+no_cores = detectCores() -1
+cl <- makePSOCKcluster(no_cores)
+registerDoParallel(cl)
+
+
+mod_tree <- train(
+                  classe ~ ., 
+                  method = "rf", 
+                  data = sample_trans,
+                  trControl = trainControl
+                  )
+
+stopCluster(cl)
+
+saveRDS(mod_tree, file = "second_mod_tree")
+
+mod_tree
+
+```
+Out of sample 
+
+
+
+predict test set
+
+```{r}
+#read data
+testing <- read_csv(test_filename)
+
+#preProcess data
+testing_clean <-  testing %>%
+        select(-c(1:7)) %>%
+        mutate_if(sapply(.,is.character), as.numeric)
+
+#remove NA cols
+testing_clean <- testing_clean %>% select(-names(na_cols))
+
+testing_processed <- predict(preProcSample, testing_clean)
+
+predict(mod_tree, testing_processed) %>%
+        as_tibble() %>%
+        mutate(row_num = row_number()) %>%
+        select(row_num, value)
+
+
+```
 
 
 out of sample error
