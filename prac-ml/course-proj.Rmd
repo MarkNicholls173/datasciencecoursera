@@ -30,10 +30,38 @@ library(doParallel)
 
 training <- read_csv(train_filename)
 
-str(training) 
+```
+Data Cleaning / EDA
+
+```{r}
+training %>% dim()
 
 ```
-data cleaning / prep
+We have a large data set, over 19k rows and 160 variables
+
+lets look at the distribution of the variable we are going to be predicting
+
+
+```{r}
+training %>%
+        select(classe) %>%
+        table()
+
+```
+
+we have an even spread amount of each class
+
+lets loot at what the first 10 variables
+
+```{r}
+training %>%
+        select(1:10) %>%
+        summary()
+```
+
+i'm not going to be using variables 1 to 7 for prediction to i will drop those.
+also converting classe to factor and all the other variables to numeric
+
 
 ```{r}
 training_clean <- training %>%
@@ -41,10 +69,23 @@ training_clean <- training %>%
         mutate(classe = as_factor(classe)) %>%
         mutate_if(sapply(.,is.character), as.numeric)
 
+```
 
-# TODO 
-# 1 deal with NAs
 
+lets find out about what NA we have
+
+```{r}
+training_clean %>%
+        select(-classe) %>%
+        pivot_longer(everything()) %>%
+        group_by(name) %>%
+        filter(value %>% is.na) %>%
+        summarise(count = n())
+```
+well, that 100 variables with almost entirely NA, i'll drop them
+
+
+```{r}
 na_cols <-  training_clean %>%
         select(-classe) %>%
         pivot_longer(everything()) %>%
@@ -60,9 +101,14 @@ training_clean <- training_clean %>% select(-names(na_cols))
 
 ```
 
+
+Instead of fitting all rows, pick a random sample of about half of them
+
+set up pre-processing to normalize then apply it to the training sample
+
 ```{r}
 #draw sample for quick fitting and testing preprocessing
-
+set.seed(123)
 sample <- sample_n(training_clean, 8000)
 
 preProcSample = preProcess(sample, 
@@ -74,7 +120,9 @@ sample_trans <- predict(preProcSample, sample)
 ```
 
 
-cross validation strategy
+cross validation to estimate out of sample error.
+
+10 fold cross validation with 10 repeats
 
 ```{r}
 
@@ -85,10 +133,9 @@ trainControl <- trainControl(method = "repeatedcv",
 
 ```
 
-random forest modelling
+Going to use a random forest model, doParallel speeds things up
 
-```{r}
-
+```{r, cache=TRUE}
 no_cores = detectCores() -1
 cl <- makePSOCKcluster(no_cores)
 registerDoParallel(cl)
@@ -103,16 +150,16 @@ mod_tree <- train(
 
 stopCluster(cl)
 
+#save the model
 saveRDS(mod_tree, file = "second_mod_tree")
 
 mod_tree
 
 ```
-Out of sample 
 
+I estimate my out of sample accuracy to be 98.5% with mtry = 27
 
-
-predict test set
+i'll use this to prediction for the quiz
 
 ```{r}
 #read data
@@ -136,13 +183,9 @@ predict(mod_tree, testing_processed) %>%
 
 ```
 
-
-out of sample error
-
-```{r}
+Result of the Quiz was 100%
 
 
-```
 
 
 
