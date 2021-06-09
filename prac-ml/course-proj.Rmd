@@ -1,5 +1,7 @@
 ---
 title: "ML Course Project"
+author: "Mark Nicholls"
+date: "9/6/2021"
 output: html_document
 ---
 
@@ -7,9 +9,23 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+
+# Introduction
+
+For this course project I have been asked to examine the Weight Lifting Exercises dataset kindly provided by http://groupware.les.inf.puc-rio.br/har.
+
+The goal is to predict the quality of execution of a movement, specifically the "Dumbbell Curl" exercise.  
+
+Six participants were ask to perform the exercise correctly and then incorrectly 5 different ways, with 10 repetitions of each.
+The data were collected through wearable devices such as *Jawbone Up*, *Nike FuelBand*, and *Fitbit*. 
+
+My goal is to correctly predict the way the exercise was conducted for the records in the test data set, which does not include the outcome variable. My results will then be entered into the prediction quiz to find out how accurately my model predicted.
+
+
+
 download the data
 
-```{r}
+```{r, cache=TRUE}
 train_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
 test_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
 
@@ -23,7 +39,7 @@ curl::curl_download(test_url, test_filename)
 
 load training data
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 library(tidyverse)
 library(caret)
 library(doParallel)
@@ -31,61 +47,57 @@ library(doParallel)
 training <- read_csv(train_filename)
 
 ```
+
 Data Cleaning / EDA
 
 ```{r}
 training %>% dim()
 
 ```
-We have a large data set, over 19k rows and 160 variables
-
-lets look at the distribution of the variable we are going to be predicting
+We have a large data set, over 19k rows and 160 variables, lets look at the distribution of the variable we are going to be predicting: `classe`
 
 
 ```{r}
 training %>%
-        select(classe) %>%
-        table()
-
+        ggplot(aes(classe, fill = classe)) +
+        geom_bar()
 ```
 
-we have an even spread amount of each class
-
-lets loot at what the first 10 variables
+We have an even spread amount of each class, lets look at the first few variables.
 
 ```{r}
 training %>%
-        select(1:10) %>%
+        select(1:8) %>%
         summary()
 ```
 
-i'm not going to be using variables 1 to 7 for prediction to i will drop those.
-also converting classe to factor and all the other variables to numeric
+I'm not going to be using variables 1 to 7 for prediction, as they do not appear to have any information needed for prediction. So I will drop those. Also I'm converting `classe` to factor and all the other variables to numeric
 
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 training_clean <- training %>%
         select(-c(1:7)) %>%
         mutate(classe = as_factor(classe)) %>%
         mutate_if(sapply(.,is.character), as.numeric)
-
 ```
 
 
-lets find out about what NA we have
+Lets find out what NAs we have.
 
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=TRUE}
 training_clean %>%
         select(-classe) %>%
         pivot_longer(everything()) %>%
         group_by(name) %>%
         filter(value %>% is.na) %>%
-        summarise(count = n())
+        summarise(count = n()) %>%
+        arrange(count)
 ```
-well, that 100 variables with almost entirely NA, i'll drop them
+
+I cant use variables with then many NAs for prediction! So, I'll drop those variables
 
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 na_cols <-  training_clean %>%
         select(-classe) %>%
         pivot_longer(everything()) %>%
@@ -93,75 +105,62 @@ na_cols <-  training_clean %>%
         filter(value %>% is.na) %>%
         summarise(count = n()) %>%
         pivot_wider(names_from = name, values_from = count)
-        
-
-names(na_cols)
 
 training_clean <- training_clean %>% select(-names(na_cols))
 
 ```
 
 
-Instead of fitting all rows, pick a random sample of about half of them
+Instead of fitting all rows, to speed things up, I'll draw a random sample of about half.
 
-set up pre-processing to normalize then apply it to the training sample
+Then I'll set up pre-processing to normalize and apply it to the training sample.
 
 ```{r}
-#draw sample for quick fitting and testing preprocessing
+#draw sample for quicker fitting
 set.seed(123)
 sample <- sample_n(training_clean, 8000)
 
 preProcSample = preProcess(sample, 
                            method = c("center", "scale"))
 
+#apply pre-processing to training set
 sample_trans <- predict(preProcSample, sample)
 
 
 ```
 
-
-cross validation to estimate out of sample error.
-
-10 fold cross validation with 10 repeats
+To get a robust estimate for my out of sample error I'll use 10 fold cross validation with 10 repeats.
 
 ```{r}
-
 trainControl <- trainControl(method = "repeatedcv",
-                          number = 10,
-                          repeats = 10,
-                          allowParallel = TRUE)
-
+                             number = 10,
+                             repeats = 10,
+                             allowParallel = TRUE)
 ```
 
-Going to use a random forest model, doParallel speeds things up
+I'm going to fit a random forest model, doParallel will speeds things up.
 
 ```{r, cache=TRUE}
 no_cores = detectCores() -1
 cl <- makePSOCKcluster(no_cores)
 registerDoParallel(cl)
 
-
-mod_tree <- train(
-                  classe ~ ., 
+mod_tree <- train(classe ~ ., 
                   method = "rf", 
                   data = sample_trans,
-                  trControl = trainControl
-                  )
+                  trControl = trainControl)
 
 stopCluster(cl)
 
 #save the model
-saveRDS(mod_tree, file = "second_mod_tree")
+saveRDS(mod_tree, file = "final_mod_tree")
 
 mod_tree
-
 ```
 
-I estimate my out of sample accuracy to be 98.5% with mtry = 27
+I estimate my out of sample accuracy to be 98.5% with mtry = 27, I'm happy with that and I'll go ahead and use this to predict on the test set  for the quiz
 
-i'll use this to prediction for the quiz
-
-```{r}
+```{r message=FALSE, warning=FALSE}
 #read data
 testing <- read_csv(test_filename)
 
@@ -179,41 +178,9 @@ predict(mod_tree, testing_processed) %>%
         as_tibble() %>%
         mutate(row_num = row_number()) %>%
         select(row_num, value)
-
-
 ```
 
-Result of the Quiz was 100%
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+The result of the Quiz submission was 100%
 
 
 

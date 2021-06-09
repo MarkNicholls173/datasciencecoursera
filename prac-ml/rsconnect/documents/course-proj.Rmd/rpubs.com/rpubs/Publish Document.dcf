@@ -1,0 +1,10 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/779558/cfbe6ec19d434d8bb631971e21c4dd1a
+bundleId: https://api.rpubs.com/api/v1/document/779558/cfbe6ec19d434d8bb631971e21c4dd1a
+url: http://rpubs.com/MNichol173/779558
+when: 1623261658.26434
